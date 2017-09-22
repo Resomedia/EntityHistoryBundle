@@ -1,0 +1,25 @@
+{
+  "name" : "resomedia/entity-history-bundle",
+  "description" : "History of entities modifications",
+  "type" : "symfony-bundle",
+  "authors" : [{
+    "name" : "jérémy pasini"
+  }],
+  "keywords" : [
+    "entity history user"
+  ],
+  "license" : [
+    "MIT"
+  ],
+  "require" : {
+    "php": ">=5.4",
+    "symfony/framework-bundle": ">=2.5",
+    "doctrine/orm": ">=2.5",
+    "gedmo/doctrine-extensions": ">=2.0"
+  },
+  "autoload" : {
+    "psr-4" : {
+      "Resomedia\\EntityHistoryBundle\\" : ""
+    }
+  }
+}
