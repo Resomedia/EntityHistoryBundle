@@ -28,12 +28,12 @@ class ResomediaEntityHistoryExtension extends Extension
         }
 
         //If empty protocol
-        if(empty($config['class_audit'])) {
-            throw new \RuntimeException('You must provide "class_audit" for EntityHistoryBundle');
+        if(empty($config['class_history'])) {
+            throw new \RuntimeException('You must provide "class_history" for EntityHistoryBundle');
         }
 
         $container->setParameter('resomedia_entity_history.user_property', $config['user_property']);
-        $container->setParameter('resomedia_entity_history.class_audit', $config['class_audit']);
+        $container->setParameter('resomedia_entity_history.class_history', $config['class_history']);
         $container->setParameter('resomedia_entity_history.entities', $config['entity']);
 
         $loader = new Loader\YamlFileLoader($container, new FileLocator(__DIR__ . '/../Resources/config'));

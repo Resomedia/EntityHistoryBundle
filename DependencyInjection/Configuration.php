@@ -24,7 +24,7 @@ class Configuration implements ConfigurationInterface
             ->scalarNode('user_property')
                 ->defaultValue('username')
             ->end()
-            ->scalarNode('class_audit')
+            ->scalarNode('class_history')
                 ->isRequired()
             ->end()
             ->arrayNode('entity')
