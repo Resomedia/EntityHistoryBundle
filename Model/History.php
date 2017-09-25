@@ -4,7 +4,6 @@ namespace Resomedia\EntityHistoryBundle\Model;
 
 use Doctrine\ORM\Mapping\MappedSuperclass;
 use Doctrine\ORM\Mapping as ORM;
-use Gedmo\Mapping\Annotation as Gedmo;
 
 /**
  * Class History
@@ -13,12 +12,19 @@ use Gedmo\Mapping\Annotation as Gedmo;
  */
 abstract class History
 {
+    const ANONYMOUS = 'anonymous';
 
     /**
      * @var string $user_property
      * @ORM\Column(name="user_property", type="string", length=255, nullable=false)
      */
     protected $user_property;
+
+    /**
+     * @var string $object_id
+     * @ORM\Column(name="object_id", type="string", length=255, nullable=false)
+     */
+    protected $object_id;
 
     /**
      * @var string $class
@@ -35,7 +41,6 @@ abstract class History
     /**
      * @var \DateTime
      * @ORM\Column(name="date", type="datetime")
-     * @Gedmo\Timestampable(on="create")
      */
     protected $date;
 
@@ -65,6 +70,20 @@ abstract class History
      */
     public function setUserProperty($userProperty) {
         $this->user_property = $userProperty;
+    }
+
+    /**
+     * @return string
+     */
+    public function getObjectId() {
+        return $this->object_id;
+    }
+
+    /**
+     * @param $objectId
+     */
+    public function setObjectId($objectId) {
+        $this->object_id = $objectId;
     }
 
     /**
