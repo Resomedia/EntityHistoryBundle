@@ -24,6 +24,7 @@ class HistorizationManager
 {
     const ENTITY_PROPERTY_ONE = 1;
     const ENTITY_PROPERTY_MANY = 2;
+
     /**
      * @var string $user_property
      */
@@ -105,9 +106,41 @@ class HistorizationManager
         $this->em->flush();
     }
 
-    public function compareEntityVersion($entity, $date = null, $lastVersionNumber = null) {
-        //si date = null, on prend la dernière sinon la dernière version à cette date
-        //si versionNumber != null, on prend la x ème version en partant de l'actuelle
+    /**
+     * @param $objectId
+     * @param null $id
+     * @return null|object
+     */
+    public function getVersion($objectId, $id = null) {
+        if ($id == null) {
+            $revision = $this->em->getRepository($this->class_audit)->findOneBy(array('object_id' => $objectId), array('id' => 'DESC'));
+        } else {
+            $revision = $this->em->getRepository($this->class_audit)->find($id);
+        }
+
+        return $revision;
+    }
+
+    /**
+     * return an array with differences and null if there isn't history for entity
+     * array result (
+     *     classic property : propName => [entity version, history version]
+     *     embeded, OneToOne or ManyToOne : propName => ['entity' => the same array that this]
+     *     OneToMany or ManyToMany : propName => ['collection' => [first entity id => the same array that this]...[last entity id => the same array that this], ['delete' => array of entities ids were remove], ['add' => array of entities ids were add] ]
+     * )
+     * @param $entity
+     * @param $id the id of revision you want to use for compare
+     * @return array|null
+     */
+    public function compareEntityVersion($entity, $id = null) {
+        $revision = $this->getVersion($entity->getId(), $id);
+        if ($revision) {
+            $entityHistory = $this->unserializeEntity($revision->getClass(), $revision->getJsonObject());
+
+            return $this->compare($entity, $entityHistory, $revision->getClass());
+        }
+
+        return null;
     }
 
     /**
@@ -264,6 +297,139 @@ class HistorizationManager
         }
 
         return $entity;
+    }
+
+    /**
+     * Difference between two instance of an entity at differente instant
+     * @param $entity
+     * @param $entityHistory
+     * @param $class
+     * @return array
+     * @throws \ErrorException
+     */
+    protected function compare($entity, $entityHistory, $class) {
+        $tabCompare = array();
+        $reflectionClass = new \ReflectionClass($class);
+
+        //get name of class in lowercase
+        $name = strtolower(substr($class, strrpos($class, '\\') + 1));
+
+        $properties = $this->getClassProperties($class);
+        foreach ($properties as $refProperty) {
+            $propName = $refProperty->getName();
+            if ((empty($this->configs[$name]['fields']) || in_array($propName, $this->configs[$name]['fields'])) && !in_array($propName, $this->configs[$name]['ignore_fields']) && $this->reader->getPropertyAnnotation($refProperty, Id::class) == null) {
+                //if relation entity
+                $annotation = $this->getAnnotation($refProperty);
+
+                //if is public access
+                if ($refProperty->isPublic()) {
+                    if ($annotation == null) {
+                        if ($entityHistory->$propName != $entity->$propName) {
+                            $tabCompare[$propName] = array($entity->$propName, $entityHistory->$propName);
+                        }
+                    } else {
+                        //relations
+                        if (array_key_exists($this::ENTITY_PROPERTY_ONE, $annotation)) {
+                            $result = $this->compare($entity->$propName, $entityHistory->$propName, $annotation[$this::ENTITY_PROPERTY_ONE]);
+                            if (!empty($result)) {
+                                $tabCompare[$propName]['entity'] = $result;
+                            }
+                        } else {
+                            $deleteEntity = array();
+                            $addEntity = array();
+                            $first = true;
+                            foreach ($entity->$propName as $subEntity) {
+                                $subEntityExist = false;
+                                foreach ($entityHistory->$propName as $subEntityHistory) {
+                                    if ($first) {
+                                        $deleteEntity[] = $subEntityHistory->getId();
+                                    }
+                                    if ($subEntity->getId() == $subEntityHistory->getId()) {
+                                        $subEntityExist = true;
+                                        unset($deleteEntity[array_search($subEntityHistory->getId(), $deleteEntity)]);
+                                        $result = $this->compare($subEntity, $subEntityHistory, $annotation[$this::ENTITY_PROPERTY_MANY]);
+                                        if (!empty($result)) {
+                                            $tabCompare[$propName]['collection'][$subEntity->getId()] = $result;
+                                        }
+                                        if (!$first) {
+                                            break;
+                                        }
+                                    }
+                                }
+                                $first = false;
+                                if (!$subEntityExist) {
+                                    $addEntity[] = $subEntity->getId();
+                                }
+                            }
+                            $tabCompare[$propName]['collection']['delete'] = $deleteEntity;
+                            $tabCompare[$propName]['collection']['delete'] = $addEntity;
+                        }
+                    }
+                } else {
+                    //if is private or protected access
+                    $tabName = explode('_', $propName);
+                    $methodName = '';
+                    foreach ($tabName as $tabNameExplode) {
+                        $methodName .= ucfirst($tabNameExplode);
+                    }
+
+                    if ($reflectionClass->hasMethod($getter = 'get' . $methodName)) {
+                        try {
+                            if ($annotation == null) {
+                                if ($entityHistory->$getter() != $entity->$getter()) {
+                                    $tabCompare[$propName] = array($entity->$getter(), $entityHistory->$getter());
+                                }
+                            } else {
+                                //relations
+                                if (array_key_exists($this::ENTITY_PROPERTY_ONE, $annotation)) {
+                                    $result = $this->compare($entity->$getter(), $entityHistory->$getter(), $annotation[$this::ENTITY_PROPERTY_ONE]);
+                                    if (!empty($result)) {
+                                        $tabCompare[$propName]['entity'] = $result;
+                                    }
+                                } else {
+                                    $deleteEntity = array();
+                                    $addEntity = array();
+                                    $first = true;
+                                    foreach ($entity->$getter() as $subEntity) {
+                                        $subEntityExist = false;
+                                        foreach ($entityHistory->$getter() as $subEntityHistory) {
+                                            if ($first) {
+                                                $deleteEntity[] = $subEntityHistory->getId();
+                                            }
+                                            if ($subEntity->getId() == $subEntityHistory->getId()) {
+                                                $subEntityExist = true;
+                                                unset($deleteEntity[array_search($subEntityHistory->getId(), $deleteEntity)]);
+                                                $result = $this->compare($subEntity, $subEntityHistory, $annotation[$this::ENTITY_PROPERTY_MANY]);
+                                                if (!empty($result)) {
+                                                    $tabCompare[$propName]['collection'][$subEntity->getId()] = $result;
+                                                }
+                                                if (!$first) {
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                        $first = false;
+                                        if (!$subEntityExist) {
+                                            $addEntity[] = $subEntity->getId();
+                                        }
+                                    }
+                                    $tabCompare[$propName]['collection']['delete'] = $deleteEntity;
+                                    $tabCompare[$propName]['collection']['delete'] = $addEntity;
+                                }
+                            }
+                        } catch (\Exception $e) {
+                            //if not have get method
+                            throw new \ErrorException($e->getMessage(), $e->getCode(), 1, $e->getFile(), $e->getLine());
+                        }
+                    } else {
+                        //if not have get method
+                        throw new \ErrorException('Impossible to execute ' . $getter . ' method in ' . $class);
+                    }
+                }
+            }
+        }
+
+        return $tabCompare;
     }
 
     /**
