@@ -5,7 +5,6 @@ namespace Resomedia\EntityHistoryBundle\Services;
 use Doctrine\Common\Annotations\Reader;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Util\ClassUtils;
-use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\Mapping\Embedded;
 use Doctrine\ORM\Mapping\Id;
 use Doctrine\ORM\Mapping\ManyToMany;
@@ -13,6 +12,7 @@ use Doctrine\ORM\Mapping\ManyToOne;
 use Doctrine\ORM\Mapping\OneToMany;
 use Doctrine\ORM\Mapping\OneToOne;
 use Resomedia\EntityHistoryBundle\Model\History;
+use Resomedia\EntityHistoryBundle\Annotation\History as HistoryAnnotation;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorage;
 use Symfony\Component\Security\Core\Authorization\AuthorizationChecker;
 
@@ -36,11 +36,6 @@ class HistorizationManager
     protected $class_audit;
 
     /**
-     * @var EntityManager $em
-     */
-    protected $em;
-
-    /**
      * @var array $configs
      */
     protected $configs;
@@ -57,7 +52,6 @@ class HistorizationManager
 
     /**
      * HistorizationManager constructor.
-     * @param EntityManager $entityManager
      * @param $userProperty
      * @param $classAudit
      * @param $authorizationChecker
@@ -65,16 +59,15 @@ class HistorizationManager
      * @param $EntityConfigs
      * @param Reader $annReader
      */
-    public function __construct(EntityManager $entityManager, $userProperty, $classAudit, AuthorizationChecker $authorizationChecker, TokenStorage $tokenStorage, $EntityConfigs, Reader $annReader)
+    public function __construct($userProperty, $classAudit, AuthorizationChecker $authorizationChecker, TokenStorage $tokenStorage, $EntityConfigs, Reader $annReader)
     {
         $this->reader = $annReader;
-        $this->em = $entityManager;
         $this->class_audit = $classAudit;
         $this->user_property = $userProperty;
-        if ($authorizationChecker->isGranted('IS_AUTHENTICATED_ANONYMOUSLY')) {
-            $this->current_user = History::ANONYMOUS;
-        } else {
+        if ($tokenStorage->getToken() != null && !$authorizationChecker->isGranted('IS_AUTHENTICATED_ANONYMOUSLY')) {
             $this->current_user = $tokenStorage->getToken()->getUser();
+        } else {
+            $this->current_user = History::ANONYMOUS;
         }
 
         $this->configs = $EntityConfigs;
@@ -83,6 +76,7 @@ class HistorizationManager
     /**
      * register the actual version of entity
      * @param $entity
+     * @return mixed
      */
     public function historizationEntity($entity) {
         $classAudit = $this->class_audit;
@@ -102,20 +96,21 @@ class HistorizationManager
         $revision->setClass(get_class($entity));
         $revision->setJsonObject($this->serializeEntity($entity));
         $revision->setDate(new \DateTime());
-        $this->em->persist($revision);
-        $this->em->flush();
+
+        return $revision;
     }
 
     /**
+     * @param $repository
      * @param $objectId
      * @param null $id
      * @return null|object
      */
-    public function getVersion($objectId, $id = null) {
+    public function getVersion($repository, $objectId, $id = null) {
         if ($id == null) {
-            $revision = $this->em->getRepository($this->class_audit)->findOneBy(array('object_id' => $objectId), array('id' => 'DESC'));
+            $revision = $repository->findOneBy(array('object_id' => $objectId), array('id' => 'DESC'));
         } else {
-            $revision = $this->em->getRepository($this->class_audit)->find($id);
+            $revision = $repository->find($id);
         }
 
         return $revision;
@@ -128,19 +123,22 @@ class HistorizationManager
      *     embeded, OneToOne or ManyToOne : propName => ['entity' => the same array that this]
      *     OneToMany or ManyToMany : propName => ['collection' => [first entity id => the same array that this]...[last entity id => the same array that this], ['delete' => array of entities ids were remove], ['add' => array of entities ids were add] ]
      * )
+     * @param $repository
      * @param $entity
+     * @param $revision
      * @param $id the id of revision you want to use for compare
      * @return array|null
      */
-    public function compareEntityVersion($entity, $id = null) {
-        $revision = $this->getVersion($entity->getId(), $id);
-        if ($revision) {
-            $entityHistory = $this->unserializeEntity($revision->getClass(), $revision->getJsonObject());
-
-            return $this->compare($entity, $entityHistory, $revision->getClass());
+    public function compareEntityVersion($repository, $entity, $revision = null, $id = null) {
+        if (!$revision) {
+            $revision = $this->getVersion($repository, $entity->getId(), $id);
+            if (!$revision) {
+                return null;
+            }
         }
+        $entityHistory = $this->unserializeEntity($revision->getClass(), $revision->getJsonObject());
 
-        return null;
+        return $this->compare($entity, $entityHistory, $revision->getClass());
     }
 
     /**
@@ -297,6 +295,11 @@ class HistorizationManager
         }
 
         return $entity;
+    }
+
+    public function hasHistoryAnnotation($entity) {
+        $reflectionClass = new \ReflectionClass($entity);
+        return $this->reader->getClassAnnotation($reflectionClass, HistoryAnnotation::class);
     }
 
     /**
