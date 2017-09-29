@@ -297,9 +297,60 @@ class HistorizationManager
         return $entity;
     }
 
-    public function hasHistoryAnnotation($entity) {
-        $reflectionClass = new \ReflectionClass($entity);
-        return $this->reader->getClassAnnotation($reflectionClass, HistoryAnnotation::class);
+    /**
+     * @param array $entities
+     * @return null
+     * @throws \Exception
+     */
+    public function historizableEntities($entities) {
+        $tabEntities = array();
+        foreach ($entities as $entity) {
+            $reflectionClass = new \ReflectionClass($entity);
+            $annotation = $this->reader->getClassAnnotation($reflectionClass, HistoryAnnotation::class);
+            if ($annotation) {
+                if ($annotation->propertyOrigin) {
+                    $tabName = explode('_', $annotation->propertyOrigin);
+                    $methodName = '';
+                    foreach ($tabName as $tabNameExplode) {
+                        $methodName .= ucfirst($tabNameExplode);
+                    }
+                    if ($reflectionClass->hasMethod($getter = 'get' . $methodName)) {
+                        $get = $entity->$getter();
+                        if (is_array($get)) {
+                            foreach ($get as $res) {
+                                $tabEntities = array_merge($tabEntities, $this->hasHistorizableEntities($res));
+                            }
+                        } else {
+                            $tabEntities = array_merge($tabEntities, $this->hasHistorizableEntities($get));
+                        }
+                    } else {
+                        throw new \Exception('No method ' . $getter . ' exist', 500);
+                    }
+                } else {
+                    $tabEntities[] = $entity;
+                }
+            }
+        }
+
+        return $tabEntities;
+    }
+
+    /**
+     * Recursive function to get an associative array of class properties
+     * including inherited ones from extended classes
+     * @param string|object $className
+     * @return array
+     */
+    public function getClassProperties($className){
+        $reflectionClass = new \ReflectionClass($className);
+        $properties = $reflectionClass->getProperties();
+        if($parentClass = $reflectionClass->getParentClass()){
+            $parentPropertiesArray = $this->getClassProperties($parentClass->getName());
+            if(count($parentPropertiesArray) > 0) {
+                $properties = array_merge($parentPropertiesArray, $properties);
+            }
+        }
+        return $properties;
     }
 
     /**
@@ -433,24 +484,6 @@ class HistorizationManager
         }
 
         return $tabCompare;
-    }
-
-    /**
-     * Recursive function to get an associative array of class properties
-     * including inherited ones from extended classes
-     * @param string $className
-     * @return array
-     */
-    protected function getClassProperties($className){
-        $reflectionClass = new \ReflectionClass($className);
-        $properties = $reflectionClass->getProperties();
-        if($parentClass = $reflectionClass->getParentClass()){
-            $parentPropertiesArray = $this->getClassProperties($parentClass->getName());
-            if(count($parentPropertiesArray) > 0) {
-                $properties = array_merge($parentPropertiesArray, $properties);
-            }
-        }
-        return $properties;
     }
 
     /**

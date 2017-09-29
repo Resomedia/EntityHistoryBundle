@@ -9,5 +9,9 @@ use Doctrine\Common\Annotations\Annotation\Target;
  * @Target("CLASS")
  */
 class History {
-    //Just an placeholder
+    /**
+     * Parameter propertyOrigin
+     * @var string
+     */
+    public $propertyOrigin;
 }
