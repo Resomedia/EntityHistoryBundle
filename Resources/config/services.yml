@@ -2,8 +2,8 @@ services:
     resomedia_entity_history.historization_manager:
         class: Resomedia\EntityHistoryBundle\Services\HistorizationManager
         arguments: ["%resomedia_entity_history.user_property%", "%resomedia_entity_history.class_history%", "@security.authorization_checker", "@security.token_storage", "%resomedia_entity_history.entities%", "@annotation_reader"]
-    resomedia_entity_history.subscriber:
-        class: Resomedia\EntityHistoryBundle\Subscribers\HistorizationSubscriber
-        arguments: ["@resomedia_entity_history.historization_manager"]
-        tags:
-            -  { name: doctrine.event_subscriber }
+    #resomedia_entity_history.subscriber:
+        #class: Resomedia\EntityHistoryBundle\Subscribers\HistorizationSubscriber
+        #arguments: ["@resomedia_entity_history.historization_manager"]
+        #tags:
+            #-  { name: doctrine.event_subscriber }
