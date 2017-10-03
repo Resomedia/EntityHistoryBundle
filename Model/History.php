@@ -34,7 +34,7 @@ abstract class History
 
     /**
      * @var text $json_object
-     * @ORM\Column(name="json_object", type="text", length=255, nullable=false)
+     * @ORM\Column(name="json_object", type="text", nullable=false)
      */
     protected $json_object;
 
