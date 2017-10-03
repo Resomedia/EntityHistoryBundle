@@ -82,7 +82,7 @@ class HistorizationManager
      */
     public function historizationEntity($entity, EntityManager $em = null)
     {
-        return $this->historizationEntity(array($entity), $em);
+        return $this->historizationEntities(array($entity), $em);
     }
 
     /**
