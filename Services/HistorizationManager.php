@@ -5,6 +5,7 @@ namespace Resomedia\EntityHistoryBundle\Services;
 use Doctrine\Common\Annotations\Reader;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Util\ClassUtils;
+use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\Mapping\Embedded;
 use Doctrine\ORM\Mapping\Id;
 use Doctrine\ORM\Mapping\ManyToMany;
@@ -74,13 +75,25 @@ class HistorizationManager
     }
 
     /**
-     * register the actual version of entity
-     * @param $entity
-     * @return mixed
+     * alias of historizationEntities
+     * @param mixed $entity
+     * @param EntityManager $em
+     * @return array
      */
-    public function historizationEntity($entity) {
+    public function historizationEntity($entity, EntityManager $em = null)
+    {
+        return $this->historizationEntity(array($entity), $em);
+    }
+
+    /**
+     * register the actual version of entities
+     * or origin entities if have a propertyOrigin specify
+     * @param array $entities
+     * @param EntityManager $em
+     * @return array
+     */
+    public function historizationEntities($entities, EntityManager $em = null) {
         $classAudit = $this->class_audit;
-        $revision = new $classAudit();
         if ($this->current_user != History::ANONYMOUS) {
             $tabName = explode('_', $this->user_property);
             $methodName = '';
@@ -88,16 +101,28 @@ class HistorizationManager
                 $methodName .= ucfirst($tabNameExplode);
             }
             $methodName = 'get' . $methodName;
-            $revision->setUserProperty($this->current_user->$methodName());
-        } else {
-            $revision->setUserProperty($this->current_user);
-        }
-        $revision->setObjectId($entity->getId());
-        $revision->setClass(get_class($entity));
-        $revision->setJsonObject($this->serializeEntity($entity));
-        $revision->setDate(new \DateTime());
+            $user = $this->current_user->$methodName();
 
-        return $revision;
+        } else {
+            $user = $this->current_user;
+        }
+        $entities = $this->historizableEntities($entities);
+        $revs = array();
+
+        foreach ($entities as $entity) {
+            $revision = new $classAudit();
+            $revision->setUserProperty($user);
+            $revision->setObjectId($entity->getId());
+            $revision->setClass(get_class($entity));
+            $revision->setJsonObject($this->serializeEntity($entity));
+            $revision->setDate(new \DateTime());
+            //if entityManager is specify, persist automaticaly
+            if ($em != null) {
+                $em->persist($revision);
+            }
+        }
+
+        return $revs;
     }
 
     /**
@@ -298,14 +323,40 @@ class HistorizationManager
     }
 
     /**
+     * Recursive function to get an associative array of class properties
+     * including inherited ones from extended classes
+     * @param string|object $className
+     * @return array
+     */
+    protected function getClassProperties($className){
+        $reflectionClass = new \ReflectionClass($className);
+        $properties = $reflectionClass->getProperties();
+        if($parentClass = $reflectionClass->getParentClass()){
+            $parentPropertiesArray = $this->getClassProperties($parentClass->getName());
+            if(count($parentPropertiesArray) > 0) {
+                $properties = array_merge($parentPropertiesArray, $properties);
+            }
+        }
+        return $properties;
+    }
+
+    /**
+     * get entity historizable define by propertyOrigin
+     * one entity can be referenced only one
      * @param array $entities
      * @return null
      * @throws \Exception
      */
-    public function historizableEntities($entities) {
+    protected function historizableEntities($entities) {
         $tabEntities = array();
+        $tabCompare = array();
         foreach ($entities as $entity) {
             $reflectionClass = new \ReflectionClass($entity);
+            if(strstr(get_class($entity), "Proxies")) {
+                $className = ClassUtils::getClass($entity);
+            } else {
+                $className = get_class($entity);
+            }
             $annotation = $this->reader->getClassAnnotation($reflectionClass, HistoryAnnotation::class);
             if ($annotation) {
                 if ($annotation->propertyOrigin) {
@@ -318,39 +369,51 @@ class HistorizationManager
                         $get = $entity->$getter();
                         if (is_array($get)) {
                             foreach ($get as $res) {
-                                $tabEntities = array_merge($tabEntities, $this->hasHistorizableEntities($res));
+                                $tab = $this->hasHistorizableEntities($res);
+                                foreach ($tab as $ent) {
+                                    if (array_key_exists($className, $tabCompare)) {
+                                        if (!in_array($ent->getId(), $tabCompare[$className])) {
+                                            $tabCompare[$className][] = $ent->getId();
+                                            $tabEntities[] = $ent;
+                                        }
+                                    } else {
+                                        $tabCompare[$className] = array($ent->getId());
+                                        $tabEntities[] = $ent;
+                                    }
+                                }
                             }
                         } else {
-                            $tabEntities = array_merge($tabEntities, $this->hasHistorizableEntities($get));
+                            $tab = $this->hasHistorizableEntities($get);
+                            foreach ($tab as $ent) {
+                                if (array_key_exists($className, $tabCompare)) {
+                                    if (!in_array($ent->getId(), $tabCompare[$className])) {
+                                        $tabCompare[$className][] = $ent->getId();
+                                        $tabEntities[] = $ent;
+                                    }
+                                } else {
+                                    $tabCompare[$className] = array($ent->getId());
+                                    $tabEntities[] = $ent;
+                                }
+                            }
                         }
                     } else {
                         throw new \Exception('No method ' . $getter . ' exist', 500);
                     }
                 } else {
-                    $tabEntities[] = $entity;
+                    if (array_key_exists($className, $tabCompare)) {
+                        if (!in_array($entity->getId(), $tabCompare[$className])) {
+                            $tabCompare[$className][] = $entity->getId();
+                            $tabEntities[] = $entity;
+                        }
+                    } else {
+                        $tabCompare[$className] = array($entity->getId());
+                        $tabEntities[] = $entity;
+                    }
                 }
             }
         }
 
         return $tabEntities;
-    }
-
-    /**
-     * Recursive function to get an associative array of class properties
-     * including inherited ones from extended classes
-     * @param string|object $className
-     * @return array
-     */
-    public function getClassProperties($className){
-        $reflectionClass = new \ReflectionClass($className);
-        $properties = $reflectionClass->getProperties();
-        if($parentClass = $reflectionClass->getParentClass()){
-            $parentPropertiesArray = $this->getClassProperties($parentClass->getName());
-            if(count($parentPropertiesArray) > 0) {
-                $properties = array_merge($parentPropertiesArray, $properties);
-            }
-        }
-        return $properties;
     }
 
     /**

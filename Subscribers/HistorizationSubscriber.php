@@ -3,7 +3,6 @@
 namespace Resomedia\EntityHistoryBundle\Subscribers;
 
 use Doctrine\Common\EventSubscriber;
-use Doctrine\Common\Util\ClassUtils;
 use Doctrine\ORM\Event\PreFlushEventArgs;
 use Doctrine\ORM\Events;
 use Resomedia\EntityHistoryBundle\Services\HistorizationManager;
@@ -48,26 +47,6 @@ class HistorizationSubscriber implements EventSubscriber
                 $allEntities[] = $entity;
             }
         }
-        $entities = $this->manager->historizableEntities($allEntities);
-        $tabCompare = array();
-        foreach ($entities as $entity) {
-            //gestion des doublons
-            if(strstr(get_class($entity), "Proxies")) {
-                $className = ClassUtils::getClass($entity);
-            } else {
-                $className = get_class($entity);
-            }
-            if (array_key_exists($className, $tabCompare)) {
-                if (!in_array($entity->getId(), $tabCompare[$className])) {
-                    $tabCompare[$className][] = $entity->getId();
-                    $rev = $this->manager->historizationEntity($entity);
-                    $em->persist($rev);
-                }
-            } else {
-                $tabCompare[$className] = array($entity->getId());
-                $rev = $this->manager->historizationEntity($entity);
-                $em->persist($rev);
-            }
-        }
+        $this->manager->historizationEntities($allEntities, $em);
     }
 }
