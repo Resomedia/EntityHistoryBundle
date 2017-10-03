@@ -359,7 +359,7 @@ class HistorizationManager
             }
             $annotation = $this->reader->getClassAnnotation($reflectionClass, HistoryAnnotation::class);
             if ($annotation) {
-                if ($annotation->propertyOrigin) {
+                if ($annotation->propertyOrigin && $annotation->getOrigin()) {
                     $tabName = explode('_', $annotation->propertyOrigin);
                     $methodName = '';
                     foreach ($tabName as $tabNameExplode) {
