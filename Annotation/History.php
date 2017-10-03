@@ -11,10 +11,10 @@ use Doctrine\Common\Annotations\Annotation\Target;
 class History {
 
     const OPERATION_EQUALS = 0;
-    const OPERATION_MORE = 1;
-    const OPERATION_LESS = 2;
-    const OPERATION_MOREEQUALS = 3;
-    const OPERATION_LESSEQUALS = 4;
+    const OPERATION_COUNTMORE = 1;
+    const OPERATION_COUNTLESS = 2;
+    const OPERATION_COUNTMOREEQUALS = 3;
+    const OPERATION_COUNTLESSEQUALS = 4;
     const OPERATION_NOTEQUALS = 5;
     const OPERATION_STRICTNOTEQUALS = 6;
     const OPERATION_STRICTEQUALS = 7;
@@ -29,13 +29,13 @@ class History {
      * Parameter conditionValue
      * @var mixed
      */
-    protected $conditionValue;
+    public $conditionValue;
 
     /**
      * Parameter operation
      * @var integer
      */
-    protected $operation;
+    public $operation;
 
     /**
      * @param mixed $value
@@ -43,11 +43,14 @@ class History {
      */
     public function getOrigin($value)
     {
-        if ($this->conditionValue === null || $this->operation === null) {
+        if ($this->conditionValue === null) {
             return true;
         }
         if ($this->conditionValue == 'NULL') {
             $this->conditionValue = null;
+        }
+        if ($this->operation === null) {
+            $this->operation = $this::OPERATION_EQUALS;
         }
         switch ($this->operation) {
             case $this::OPERATION_EQUALS:
@@ -55,22 +58,22 @@ class History {
                     return true;
                 }
                 break;
-            case $this::OPERATION_MORE:
+            case $this::OPERATION_COUNTMORE:
                 if ($value > $this->conditionValue) {
                     return true;
                 }
                 break;
-            case $this::OPERATION_LESS:
+            case $this::OPERATION_COUNTLESS:
                 if ($value < $this->conditionValue) {
                     return true;
                 }
                 break;
-            case $this::OPERATION_MOREEQUALS:
+            case $this::OPERATION_COUNTMOREEQUALS:
                 if ($value >= $this->conditionValue) {
                     return true;
                 }
                 break;
-            case $this::OPERATION_LESSEQUALS:
+            case $this::OPERATION_COUNTLESSEQUALS:
                 if ($value <= $this->conditionValue) {
                     return true;
                 }
