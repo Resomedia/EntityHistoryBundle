@@ -127,6 +127,7 @@ class HistorizationManager
             $revision->setClass(get_class($entity));
             $revision->setJsonObject($this->serializeEntity($entity));
             $revision->setDate(new \DateTime());
+            $revision->addProcess($entity);
             //if entityManager is specify, persist automaticaly
             if ($em != null) {
                 $em->persist($revision);
