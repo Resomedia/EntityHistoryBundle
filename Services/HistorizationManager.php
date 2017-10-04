@@ -139,12 +139,17 @@ class HistorizationManager
     /**
      * @param $repository
      * @param $objectId
+     * @param null $className
      * @param null $id
-     * @return null|object
+     * @return mixed
+     * @throws \Exception
      */
-    public function getVersion($repository, $objectId, $id = null) {
+    public function getVersion($repository, $objectId, $className = null, $id = null) {
+        if ($className == null && $id == null) {
+            throw new \Exception('classname or id should be defined', 500);
+        }
         if ($id == null) {
-            $revision = $repository->findOneBy(array('object_id' => $objectId), array('id' => 'DESC'));
+            $revision = $repository->findOneBy(array('object_id' => $objectId, 'class' => $className), array('id' => 'DESC'));
         } else {
             $revision = $repository->find($id);
         }
@@ -167,7 +172,7 @@ class HistorizationManager
      */
     public function compareEntityVersion($repository, $entity, $revision = null, $id = null) {
         if (!$revision) {
-            $revision = $this->getVersion($repository, $entity->getId(), $id);
+            $revision = $this->getVersion($repository, $entity->getId(), get_class($entity), $id);
             if (!$revision) {
                 return null;
             }
