@@ -216,12 +216,14 @@ class HistorizationManager
                         $tab[$propName] = $entity->$propName;
                     } else {
                         //relations
-                        if (array_key_exists($this::ENTITY_PROPERTY_ONE, $annotation)) {
-                            $tab[$propName] = json_decode($this->serializeEntity($entity->$propName), true);
-                        } else {
-                            $tab[$propName] = array();
-                            foreach ($entity->$propName as $subEntity) {
-                                $tab[$propName][] = json_decode($this->serializeEntity($subEntity), true);
+                        if ($entity->$propName != null) {
+                            if (array_key_exists($this::ENTITY_PROPERTY_ONE, $annotation)) {
+                                $tab[$propName] = json_decode($this->serializeEntity($entity->$propName), true);
+                            } else {
+                                $tab[$propName] = array();
+                                foreach ($entity->$propName as $subEntity) {
+                                    $tab[$propName][] = json_decode($this->serializeEntity($subEntity), true);
+                                }
                             }
                         }
                     }
@@ -238,13 +240,15 @@ class HistorizationManager
                             if ($annotation == null) {
                                 $tab[$propName] = $entity->$getter();
                             } else {
-                                //relations
-                                if (array_key_exists($this::ENTITY_PROPERTY_ONE, $annotation)) {
-                                    $tab[$propName] = json_decode($this->serializeEntity($entity->$getter()), true);
-                                } else {
-                                    $tab[$propName] = array();
-                                    foreach ($entity->$getter() as $subEntity) {
-                                        $tab[$propName][] = json_decode($this->serializeEntity($subEntity), true);
+                                if ($entity->$getter() != null) {
+                                    //relations
+                                    if (array_key_exists($this::ENTITY_PROPERTY_ONE, $annotation)) {
+                                        $tab[$propName] = json_decode($this->serializeEntity($entity->$getter()), true);
+                                    } else {
+                                        $tab[$propName] = array();
+                                        foreach ($entity->$getter() as $subEntity) {
+                                            $tab[$propName][] = json_decode($this->serializeEntity($subEntity), true);
+                                        }
                                     }
                                 }
                             }
