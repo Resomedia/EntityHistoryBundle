@@ -13,6 +13,8 @@ use Doctrine\ORM\Mapping as ORM;
 abstract class History
 {
     const ANONYMOUS = 'anonymous';
+    const STATE_INSERT = 0;
+    const STATE_UPDATE = 1;
 
     /**
      * @var string $user_property
@@ -22,9 +24,15 @@ abstract class History
 
     /**
      * @var string $object_id
-     * @ORM\Column(name="object_id", type="string", length=255, nullable=false)
+     * @ORM\Column(name="object_id", type="string", length=255, nullable=true)
      */
     protected $object_id;
+
+    /**
+     * @var string $state
+     * @ORM\Column(name="state", type="integer", nullable=false)
+     */
+    protected $state;
 
     /**
      * @var string $class
@@ -112,5 +120,19 @@ abstract class History
      */
     public function setDate($date) {
         $this->date = $date;
+    }
+
+    /**
+     * @return integer
+     */
+    public function getState() {
+        return $this->state;
+    }
+
+    /**
+     * @param $state
+     */
+    public function setState($state) {
+        $this->state = $state;
     }
 }
