@@ -135,4 +135,15 @@ abstract class History
     public function setState($state) {
         $this->state = $state;
     }
+
+    /**
+     * Call after the create history object process
+     * You can override this for add additionnal process and modify revision before persist
+     * In param, the entity was modify
+     * @param mixed $entity
+     * @return mixed
+     */
+    public function addProcess($entity) {
+        return null;
+    }
 }
