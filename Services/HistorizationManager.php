@@ -78,11 +78,12 @@ class HistorizationManager
      * alias of historizationEntities
      * @param mixed $entity
      * @param EntityManager $em
+     * @param integer $state
      * @return array
      */
-    public function historizationEntity($entity, EntityManager $em = null)
+    public function historizationEntity($entity, EntityManager $em = null, $state = null)
     {
-        return $this->historizationEntities(array($entity), $em);
+        return $this->historizationEntities(array($entity), $em, $state);
     }
 
     /**
@@ -90,9 +91,10 @@ class HistorizationManager
      * or origin entities if have a propertyOrigin specify
      * @param array $entities
      * @param EntityManager $em
+     * @param integer $state
      * @return array
      */
-    public function historizationEntities($entities, EntityManager $em = null) {
+    public function historizationEntities($entities, EntityManager $em = null, $state = null) {
         $classAudit = $this->class_audit;
         if ($this->current_user != History::ANONYMOUS) {
             $tabName = explode('_', $this->user_property);
@@ -110,7 +112,16 @@ class HistorizationManager
         $revs = array();
 
         foreach ($entities as $entity) {
+            //if you want, you can force state & create your own state
+            if ($state === null) {
+                if ($entity->getId() !== null) {
+                    $state = History::STATE_UPDATE;
+                } else {
+                    $state = History::STATE_INSERT;
+                }
+            }
             $revision = new $classAudit();
+            $revision->setState($state);
             $revision->setUserProperty($user);
             $revision->setObjectId($entity->getId());
             $revision->setClass(get_class($entity));
@@ -359,7 +370,7 @@ class HistorizationManager
             }
             $annotation = $this->reader->getClassAnnotation($reflectionClass, HistoryAnnotation::class);
             if ($annotation) {
-                if ($annotation->propertyOrigin) {
+                if ($annotation->propertyOrigin && $annotation->getOrigin()) {
                     $tabName = explode('_', $annotation->propertyOrigin);
                     $methodName = '';
                     foreach ($tabName as $tabNameExplode) {
@@ -367,9 +378,24 @@ class HistorizationManager
                     }
                     if ($reflectionClass->hasMethod($getter = 'get' . $methodName)) {
                         $get = $entity->$getter();
-                        if (is_array($get)) {
-                            foreach ($get as $res) {
-                                $tab = $this->hasHistorizableEntities($res);
+                        if ($annotation->getOrigin($get)) {
+                            if (is_array($get)) {
+                                foreach ($get as $res) {
+                                    $tab = $this->historizableEntities($res);
+                                    foreach ($tab as $ent) {
+                                        if (array_key_exists($className, $tabCompare)) {
+                                            if (!in_array($ent->getId(), $tabCompare[$className])) {
+                                                $tabCompare[$className][] = $ent->getId();
+                                                $tabEntities[] = $ent;
+                                            }
+                                        } else {
+                                            $tabCompare[$className] = array($ent->getId());
+                                            $tabEntities[] = $ent;
+                                        }
+                                    }
+                                }
+                            } else {
+                                $tab = $this->historizableEntities(array($get));
                                 foreach ($tab as $ent) {
                                     if (array_key_exists($className, $tabCompare)) {
                                         if (!in_array($ent->getId(), $tabCompare[$className])) {
@@ -383,17 +409,14 @@ class HistorizationManager
                                 }
                             }
                         } else {
-                            $tab = $this->hasHistorizableEntities($get);
-                            foreach ($tab as $ent) {
-                                if (array_key_exists($className, $tabCompare)) {
-                                    if (!in_array($ent->getId(), $tabCompare[$className])) {
-                                        $tabCompare[$className][] = $ent->getId();
-                                        $tabEntities[] = $ent;
-                                    }
-                                } else {
-                                    $tabCompare[$className] = array($ent->getId());
-                                    $tabEntities[] = $ent;
+                            if (array_key_exists($className, $tabCompare)) {
+                                if (!in_array($entity->getId(), $tabCompare[$className])) {
+                                    $tabCompare[$className][] = $entity->getId();
+                                    $tabEntities[] = $entity;
                                 }
+                            } else {
+                                $tabCompare[$className] = array($entity->getId());
+                                $tabEntities[] = $entity;
                             }
                         }
                     } else {
