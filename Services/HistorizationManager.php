@@ -7,7 +7,6 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Util\ClassUtils;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\Mapping\Embedded;
-use Doctrine\ORM\Mapping\Id;
 use Doctrine\ORM\Mapping\ManyToMany;
 use Doctrine\ORM\Mapping\ManyToOne;
 use Doctrine\ORM\Mapping\OneToMany;
@@ -220,7 +219,7 @@ class HistorizationManager
         $properties = $this->getClassProperties($className);
         foreach ($properties as $refProperty) {
             $propName = $refProperty->getName();
-            if ((empty($this->configs[$name]['fields']) || in_array($propName, $this->configs[$name]['fields'])) && !in_array($propName, $this->configs[$name]['ignore_fields']) && $this->reader->getPropertyAnnotation($refProperty, Id::class) == null) {
+            if ((empty($this->configs[$name]['fields']) || in_array($propName, $this->configs[$name]['fields'])) && !in_array($propName, $this->configs[$name]['ignore_fields'])) {
                 //if relation entity
                 $annotation = $this->getAnnotation($refProperty);
 
@@ -299,7 +298,7 @@ class HistorizationManager
         $properties = $this->getClassProperties($className);
         foreach ($properties as $refProperty) {
             $propName = $refProperty->getName();
-            if ((empty($this->configs[$name]['fields']) || in_array($propName, $this->configs[$name]['fields'])) && !in_array($propName, $this->configs[$name]['ignore_fields']) && $this->reader->getPropertyAnnotation($refProperty, Id::class) == null && array_key_exists($propName, $tab)) {
+            if ((empty($this->configs[$name]['fields']) || in_array($propName, $this->configs[$name]['fields'])) && !in_array($propName, $this->configs[$name]['ignore_fields']) && array_key_exists($propName, $tab)) {
                 //if relation entity
                 $annotation = $this->getAnnotation($refProperty);
 
@@ -494,7 +493,7 @@ class HistorizationManager
         $properties = $this->getClassProperties($class);
         foreach ($properties as $refProperty) {
             $propName = $refProperty->getName();
-            if ((empty($this->configs[$name]['fields']) || in_array($propName, $this->configs[$name]['fields'])) && !in_array($propName, $this->configs[$name]['ignore_fields']) && $this->reader->getPropertyAnnotation($refProperty, Id::class) == null) {
+            if ((empty($this->configs[$name]['fields']) || in_array($propName, $this->configs[$name]['fields'])) && !in_array($propName, $this->configs[$name]['ignore_fields'])) {
                 //if relation entity
                 $annotation = $this->getAnnotation($refProperty);
 
