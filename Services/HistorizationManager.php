@@ -124,7 +124,12 @@ class HistorizationManager
             $revision->setState($state);
             $revision->setUserProperty($user);
             $revision->setObjectId($entity->getId());
-            $revision->setClass(get_class($entity));
+            if(strstr(get_class($entity), "Proxies")) {
+                $className = ClassUtils::getClass($entity);
+            } else {
+                $className = get_class($entity);
+            }
+            $revision->setClass($className);
             $revision->setJsonObject($this->serializeEntity($entity));
             $revision->setDate(new \DateTime());
             $revision->addProcess($entity);
@@ -173,7 +178,12 @@ class HistorizationManager
      */
     public function compareEntityVersion($repository, $entity, $revision = null, $id = null) {
         if (!$revision) {
-            $revision = $this->getVersion($repository, $entity->getId(), get_class($entity), $id);
+            if(strstr(get_class($entity), "Proxies")) {
+                $className = ClassUtils::getClass($entity);
+            } else {
+                $className = get_class($entity);
+            }
+            $revision = $this->getVersion($repository, $entity->getId(), $className, $id);
             if (!$revision) {
                 return null;
             }
