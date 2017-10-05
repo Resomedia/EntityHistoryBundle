@@ -43,14 +43,11 @@ class History {
      */
     public function getOrigin($value)
     {
-        if ($this->conditionValue === null) {
+        if ($this->operation === null) {
             return true;
         }
         if ($this->conditionValue == 'NULL') {
             $this->conditionValue = null;
-        }
-        if ($this->operation === null) {
-            $this->operation = $this::OPERATION_EQUALS;
         }
         switch ($this->operation) {
             case $this::OPERATION_EQUALS:
