@@ -89,12 +89,12 @@ class HistorizationManager
     /**
      * register the actual version of entities
      * or origin entities if have a propertyOrigin specify
-     * @param array $entities
+     * @param array $entitiesO
      * @param EntityManager $em
      * @param integer $state
      * @return array
      */
-    public function historizationEntities($entities, EntityManager $em = null, $state = null) {
+    public function historizationEntities($entitiesO, EntityManager $em = null, $state = null) {
         $classAudit = $this->class_audit;
         if ($this->current_user != History::ANONYMOUS) {
             $tabName = explode('_', $this->user_property);
@@ -108,13 +108,17 @@ class HistorizationManager
         } else {
             $user = $this->current_user;
         }
-        $entities = $this->historizableEntities($entities);
-        $revs = array();
 
+        $entities = array();
+        foreach ($entitiesO as $entity) {
+            $entities[] = array($entity, $this->historizableEntities($entities));
+        }
+
+        $revs = array();
         foreach ($entities as $entity) {
             //if you want, you can force state & create your own state
             if ($state === null) {
-                if ($entity->getId() !== null) {
+                if ($entity[1]->getId() !== null) {
                     $state = History::STATE_UPDATE;
                 } else {
                     $state = History::STATE_INSERT;
@@ -123,16 +127,16 @@ class HistorizationManager
             $revision = new $classAudit();
             $revision->setState($state);
             $revision->setUserProperty($user);
-            $revision->setObjectId($entity->getId());
-            if(strstr(get_class($entity), "Proxies")) {
-                $className = ClassUtils::getClass($entity);
+            $revision->setObjectId($entity[1]->getId());
+            if(strstr(get_class($entity[1]), "Proxies")) {
+                $className = ClassUtils::getClass($entity[1]);
             } else {
-                $className = get_class($entity);
+                $className = get_class($entity[1]);
             }
             $revision->setClass($className);
-            $revision->setJsonObject($this->serializeEntity($entity));
+            $revision->setJsonObject($this->serializeEntity($entity[1]));
             $revision->setDate(new \DateTime());
-            $revision->addProcess($entity);
+            $revision->addProcess($entity[0], $entity[1]);
             //if entityManager is specify, persist automaticaly
             if ($em != null) {
                 $em->persist($revision);
