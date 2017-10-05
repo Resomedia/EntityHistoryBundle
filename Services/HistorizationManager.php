@@ -299,7 +299,7 @@ class HistorizationManager
         $properties = $this->getClassProperties($className);
         foreach ($properties as $refProperty) {
             $propName = $refProperty->getName();
-            if ((empty($this->configs[$name]['fields']) || in_array($propName, $this->configs[$name]['fields'])) && !in_array($propName, $this->configs[$name]['ignore_fields']) && $this->reader->getPropertyAnnotation($refProperty, Id::class) == null) {
+            if ((empty($this->configs[$name]['fields']) || in_array($propName, $this->configs[$name]['fields'])) && !in_array($propName, $this->configs[$name]['ignore_fields']) && $this->reader->getPropertyAnnotation($refProperty, Id::class) == null && array_key_exists($propName, $tab)) {
                 //if relation entity
                 $annotation = $this->getAnnotation($refProperty);
 
