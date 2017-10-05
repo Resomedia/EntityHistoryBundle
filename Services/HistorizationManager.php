@@ -65,7 +65,7 @@ class HistorizationManager
         $this->reader = $annReader;
         $this->class_audit = $classAudit;
         $this->user_property = $userProperty;
-        if ($tokenStorage->getToken() != null && !$authorizationChecker->isGranted('IS_AUTHENTICATED_ANONYMOUSLY')) {
+        if ($tokenStorage->getToken() != null && $authorizationChecker->isGranted('IS_AUTHENTICATED_REMEMBERED')) {
             $this->current_user = $tokenStorage->getToken()->getUser();
         } else {
             $this->current_user = History::ANONYMOUS;
