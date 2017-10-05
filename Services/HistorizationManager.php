@@ -171,8 +171,8 @@ class HistorizationManager
      * return an array with differences and null if there isn't history for entity
      * array result (
      *     classic property : propName => [entity version, history version]
-     *     embeded, OneToOne or ManyToOne : propName => ['entity' => the same array that this]
-     *     OneToMany or ManyToMany : propName => ['collection' => [first entity id => the same array that this]...[last entity id => the same array that this], ['delete' => array of entities ids were remove], ['add' => array of entities ids were add] ]
+     *     embeded, OneToOne or ManyToOne : propName => ['entity' => the same array that this, 'delete' => bool, 'add' => bool]
+     *     OneToMany or ManyToMany : propName => ['collection' => [first entity id => the same array that this, ..., last entity id => the same array that this], 'delete' => array of entities ids were remove, 'add' => array of entities ids were add ]
      * )
      * @param $repository
      * @param $entity
@@ -507,9 +507,22 @@ class HistorizationManager
                     } else {
                         //relations
                         if ($annotation[0] == $this::ENTITY_PROPERTY_ONE) {
-                            $result = $this->compare($entity->$propName, $entityHistory->$propName, $annotation[1]);
-                            if (!empty($result)) {
-                                $tabCompare[$propName]['entity'] = $result;
+                            if ($entity->$propName === null && $entityHistory->$propName !== null) {
+                                $tabCompare[$propName]['entity'] = null;
+                                $tabCompare[$propName]['delete'] = true;
+                                $tabCompare[$propName]['add'] = false;
+                            } elseif ($entityHistory->$propName === null && $entity->$propName !== null) {
+                                $tabCompare[$propName]['entity'] = null;
+                                $tabCompare[$propName]['delete'] = false;
+                                $tabCompare[$propName]['add'] = true;
+                            } elseif ($entity->$propName !== null && $entityHistory->$propName !== null) {
+                                $result = $this->compare($entity->$propName, $entityHistory->$propName, $annotation[1]);
+                                $tabCompare[$propName]['entity'] = null;
+                                if (!empty($result)) {
+                                    $tabCompare[$propName]['entity'] = $result;
+                                }
+                                $tabCompare[$propName]['delete'] = false;
+                                $tabCompare[$propName]['add'] = false;
                             }
                         } else {
                             $deleteEntity = array();
@@ -538,8 +551,8 @@ class HistorizationManager
                                     $addEntity[] = $subEntity->getId();
                                 }
                             }
-                            $tabCompare[$propName]['collection']['delete'] = $deleteEntity;
-                            $tabCompare[$propName]['collection']['delete'] = $addEntity;
+                            $tabCompare[$propName]['delete'] = $deleteEntity;
+                            $tabCompare[$propName]['add'] = $addEntity;
                         }
                     }
                 } else {
@@ -559,9 +572,22 @@ class HistorizationManager
                             } else {
                                 //relations
                                 if ($annotation[0] == $this::ENTITY_PROPERTY_ONE) {
-                                    $result = $this->compare($entity->$getter(), $entityHistory->$getter(), $annotation[1]);
-                                    if (!empty($result)) {
-                                        $tabCompare[$propName]['entity'] = $result;
+                                    if ($entity->$getter() === null && $entityHistory->$getter() !== null) {
+                                        $tabCompare[$propName]['entity'] = null;
+                                        $tabCompare[$propName]['delete'] = true;
+                                        $tabCompare[$propName]['add'] = false;
+                                    } elseif ($entityHistory->$getter() === null && $entity->$getter() !== null) {
+                                        $tabCompare[$propName]['entity'] = null;
+                                        $tabCompare[$propName]['delete'] = false;
+                                        $tabCompare[$propName]['add'] = true;
+                                    } elseif ($entity->$getter() !== null && $entityHistory->$getter() !== null) {
+                                        $result = $this->compare($entity->$getter(), $entityHistory->$getter(), $annotation[1]);
+                                        $tabCompare[$propName]['entity'] = null;
+                                        if (!empty($result)) {
+                                            $tabCompare[$propName]['entity'] = $result;
+                                        }
+                                        $tabCompare[$propName]['delete'] = false;
+                                        $tabCompare[$propName]['add'] = false;
                                     }
                                 } else {
                                     $deleteEntity = array();
@@ -590,8 +616,8 @@ class HistorizationManager
                                             $addEntity[] = $subEntity->getId();
                                         }
                                     }
-                                    $tabCompare[$propName]['collection']['delete'] = $deleteEntity;
-                                    $tabCompare[$propName]['collection']['delete'] = $addEntity;
+                                    $tabCompare[$propName]['delete'] = $deleteEntity;
+                                    $tabCompare[$propName]['add'] = $addEntity;
                                 }
                             }
                         } catch (\Exception $e) {
