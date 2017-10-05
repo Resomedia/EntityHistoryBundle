@@ -110,35 +110,37 @@ class HistorizationManager
 
         $entities = array();
         foreach ($entitiesO as $entity) {
-            $entities[] = array($entity, $this->historizableEntities($entities));
+            $entities[] = array($entity, $this->historizableEntities(array($entity)));
         }
 
         $revs = array();
-        foreach ($entities as $entity) {
-            //if you want, you can force state & create your own state
-            if ($state === null) {
-                if ($entity[1]->getId() !== null) {
-                    $state = History::STATE_UPDATE;
-                } else {
-                    $state = History::STATE_INSERT;
+        foreach ($entities as $cycleEntity) {
+            foreach ($cycleEntity[1] as $entity) {
+                //if you want, you can force state & create your own state
+                if ($state === null) {
+                    if ($entity->getId() !== null) {
+                        $state = History::STATE_UPDATE;
+                    } else {
+                        $state = History::STATE_INSERT;
+                    }
                 }
-            }
-            $revision = new $classAudit();
-            $revision->setState($state);
-            $revision->setUserProperty($user);
-            $revision->setObjectId($entity[1]->getId());
-            if(strstr(get_class($entity[1]), "Proxies")) {
-                $className = ClassUtils::getClass($entity[1]);
-            } else {
-                $className = get_class($entity[1]);
-            }
-            $revision->setClass($className);
-            $revision->setJsonObject($this->serializeEntity($entity[1]));
-            $revision->setDate(new \DateTime());
-            $revision->addProcess($entity[0], $entity[1]);
-            //if entityManager is specify, persist automaticaly
-            if ($em != null) {
-                $em->persist($revision);
+                $revision = new $classAudit();
+                $revision->setState($state);
+                $revision->setUserProperty($user);
+                $revision->setObjectId($entity->getId());
+                if(strstr(get_class($entity), "Proxies")) {
+                    $className = ClassUtils::getClass($entity);
+                } else {
+                    $className = get_class($entity);
+                }
+                $revision->setClass($className);
+                $revision->setJsonObject($this->serializeEntity($entity));
+                $revision->setDate(new \DateTime());
+                $revision->addProcess($cycleEntity[0], $entity);
+                //if entityManager is specify, persist automaticaly
+                if ($em != null) {
+                    $em->persist($revision);
+                }
             }
         }
 
