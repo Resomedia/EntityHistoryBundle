@@ -326,7 +326,9 @@ class HistorizationManager
                     foreach ($tabName as $tabNameExplode) {
                         $methodName .= ucfirst($tabNameExplode);
                     }
-                    if ($reflectionClass->hasMethod($setter = 'set' . $methodName)) {
+                    $setter = 'set' . $methodName;
+                    $adder = 'add' . $methodName;
+                    if ($reflectionClass->hasMethod($setter) || $reflectionClass->hasMethod($adder)) {
                         try {
                             if ($annotation == null) {
                                 $entity->$setter($tab[$propName]);
@@ -335,11 +337,9 @@ class HistorizationManager
                                 if ($annotation[0] == $this::ENTITY_PROPERTY_ONE) {
                                     $entity->$setter($this->unserializeEntity($annotation[1], json_encode($tab[$propName])));
                                 } else {
-                                    $colection = new ArrayCollection();
                                     foreach ($tab[$propName] as $subValue) {
-                                        $colection->add($this->unserializeEntity($annotation[1], json_encode($subValue)));
+                                        $entity->$adder($this->unserializeEntity($annotation[1], json_encode($subValue)));
                                     }
-                                    $entity->$setter($colection);
                                 }
                             }
                         } catch (\Exception $e) {
