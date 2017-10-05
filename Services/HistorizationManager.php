@@ -382,12 +382,12 @@ class HistorizationManager
         $tabEntities = array();
         $tabCompare = array();
         foreach ($entities as $entity) {
-            $reflectionClass = new \ReflectionClass($entity);
             if(strstr(get_class($entity), "Proxies")) {
                 $className = ClassUtils::getClass($entity);
             } else {
                 $className = get_class($entity);
             }
+            $reflectionClass = new \ReflectionClass($className);
             $annotation = $this->reader->getClassAnnotation($reflectionClass, HistoryAnnotation::class);
             if ($annotation) {
                 if ($annotation->propertyOrigin) {
