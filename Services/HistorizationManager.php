@@ -328,7 +328,8 @@ class HistorizationManager
                     }
                     $setter = 'set' . $methodName;
                     $adder = 'add' . $methodName;
-                    if ($reflectionClass->hasMethod($setter) || $reflectionClass->hasMethod($adder)) {
+                    $adderss = 'add' . substr($methodName, 0, strlen($methodName) - 1);
+                    if ($reflectionClass->hasMethod($setter) || $reflectionClass->hasMethod($adder) || $reflectionClass->hasMethod($adderss)) {
                         try {
                             if ($annotation == null) {
                                 $entity->$setter($tab[$propName]);
@@ -337,8 +338,20 @@ class HistorizationManager
                                 if ($annotation[0] == $this::ENTITY_PROPERTY_ONE) {
                                     $entity->$setter($this->unserializeEntity($annotation[1], json_encode($tab[$propName])));
                                 } else {
-                                    foreach ($tab[$propName] as $subValue) {
-                                        $entity->$adder($this->unserializeEntity($annotation[1], json_encode($subValue)));
+                                    if ($reflectionClass->hasMethod($adder) || $reflectionClass->hasMethod($adderss)) {
+                                        foreach ($tab[$propName] as $subValue) {
+                                            if ($reflectionClass->hasMethod($adder)) {
+                                                $entity->$adderss($this->unserializeEntity($annotation[1], json_encode($subValue)));
+                                            } else {
+                                                $entity->$adder($this->unserializeEntity($annotation[1], json_encode($subValue)));
+                                            }
+                                        }
+                                    } else {
+                                        $colection = new ArrayCollection();
+                                        foreach ($tab[$propName] as $subValue) {
+                                            $colection->add($this->unserializeEntity($annotation[1], json_encode($subValue)));
+                                        }
+                                        $entity->$setter($colection);
                                     }
                                 }
                             }
