@@ -140,10 +140,11 @@ abstract class History
      * Call after the create history object process
      * You can override this for add additionnal process and modify revision before persist
      * In param, the entity was modify
-     * @param mixed $entity
+     * @param mixed $origineEntity
+     * @param mixed $historizableEntity
      * @return mixed
      */
-    public function addProcess($entity) {
+    public function addProcess($origineEntity, $historizableEntity) {
         return null;
     }
 }
