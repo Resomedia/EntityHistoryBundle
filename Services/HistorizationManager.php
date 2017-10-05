@@ -341,9 +341,9 @@ class HistorizationManager
                                     if ($reflectionClass->hasMethod($adder) || $reflectionClass->hasMethod($adderss)) {
                                         foreach ($tab[$propName] as $subValue) {
                                             if ($reflectionClass->hasMethod($adder)) {
-                                                $entity->$adderss($this->unserializeEntity($annotation[1], json_encode($subValue)));
-                                            } else {
                                                 $entity->$adder($this->unserializeEntity($annotation[1], json_encode($subValue)));
+                                            } else {
+                                                $entity->$adderss($this->unserializeEntity($annotation[1], json_encode($subValue)));
                                             }
                                         }
                                     } else {
