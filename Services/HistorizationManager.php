@@ -518,7 +518,7 @@ class HistorizationManager
                             } elseif ($entity->$propName !== null && $entityHistory->$propName !== null) {
                                 $result = $this->compare($entity->$propName, $entityHistory->$propName, $annotation[1]);
                                 $tabCompare[$propName]['entity'] = null;
-                                if (!empty($result)) {
+                                if ($result && !empty($result)) {
                                     $tabCompare[$propName]['entity'] = $result;
                                 }
                                 $tabCompare[$propName]['delete'] = false;
@@ -526,20 +526,22 @@ class HistorizationManager
                             }
                         } else {
                             $deleteEntity = array();
+                            $notDeleteEntity = array();
                             $addEntity = array();
+                            $collection = array();
                             $first = true;
                             foreach ($entity->$propName as $subEntity) {
-                                $subEntityExist = false;
+                                $add = true;
                                 foreach ($entityHistory->$propName as $subEntityHistory) {
                                     if ($first) {
                                         $deleteEntity[] = $subEntityHistory->getId();
                                     }
                                     if ($subEntity->getId() == $subEntityHistory->getId()) {
-                                        $subEntityExist = true;
-                                        unset($deleteEntity[array_search($subEntityHistory->getId(), $deleteEntity)]);
+                                        $add = false;
+                                        $notDeleteEntity[] = $subEntityHistory->getId();
                                         $result = $this->compare($subEntity, $subEntityHistory, $annotation[1]);
-                                        if (!empty($result)) {
-                                            $tabCompare[$propName]['collection'][$subEntity->getId()] = $result;
+                                        if ($result && !empty($result)) {
+                                            $collection[$subEntity->getId()] = $result;
                                         }
                                         if (!$first) {
                                             break;
@@ -547,10 +549,12 @@ class HistorizationManager
                                     }
                                 }
                                 $first = false;
-                                if (!$subEntityExist) {
+                                if ($add) {
                                     $addEntity[] = $subEntity->getId();
                                 }
                             }
+                            $deleteEntity = array_diff($deleteEntity, $notDeleteEntity);
+                            $tabCompare[$propName]['collection'] = $collection;
                             $tabCompare[$propName]['delete'] = $deleteEntity;
                             $tabCompare[$propName]['add'] = $addEntity;
                         }
@@ -583,7 +587,7 @@ class HistorizationManager
                                     } elseif ($entity->$getter() !== null && $entityHistory->$getter() !== null) {
                                         $result = $this->compare($entity->$getter(), $entityHistory->$getter(), $annotation[1]);
                                         $tabCompare[$propName]['entity'] = null;
-                                        if (!empty($result)) {
+                                        if ($result && !empty($result)) {
                                             $tabCompare[$propName]['entity'] = $result;
                                         }
                                         $tabCompare[$propName]['delete'] = false;
@@ -591,20 +595,22 @@ class HistorizationManager
                                     }
                                 } else {
                                     $deleteEntity = array();
+                                    $notDeleteEntity = array();
                                     $addEntity = array();
+                                    $collection = array();
                                     $first = true;
                                     foreach ($entity->$getter() as $subEntity) {
-                                        $subEntityExist = false;
+                                        $add = true;
                                         foreach ($entityHistory->$getter() as $subEntityHistory) {
                                             if ($first) {
                                                 $deleteEntity[] = $subEntityHistory->getId();
                                             }
                                             if ($subEntity->getId() == $subEntityHistory->getId()) {
-                                                $subEntityExist = true;
-                                                unset($deleteEntity[array_search($subEntityHistory->getId(), $deleteEntity)]);
+                                                $add = false;
+                                                $notDeleteEntity[] = $subEntityHistory->getId();
                                                 $result = $this->compare($subEntity, $subEntityHistory, $annotation[1]);
-                                                if (!empty($result)) {
-                                                    $tabCompare[$propName]['collection'][$subEntity->getId()] = $result;
+                                                if ($result && !empty($result)) {
+                                                    $collection[$subEntity->getId()] = $result;
                                                 }
                                                 if (!$first) {
                                                     break;
@@ -612,10 +618,12 @@ class HistorizationManager
                                             }
                                         }
                                         $first = false;
-                                        if (!$subEntityExist) {
+                                        if ($add) {
                                             $addEntity[] = $subEntity->getId();
                                         }
                                     }
+                                    $deleteEntity = array_diff($deleteEntity, $notDeleteEntity);
+                                    $tabCompare[$propName]['collection'] = $collection;
                                     $tabCompare[$propName]['delete'] = $deleteEntity;
                                     $tabCompare[$propName]['add'] = $addEntity;
                                 }
