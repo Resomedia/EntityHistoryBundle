@@ -231,7 +231,7 @@ class HistorizationManager
                     } else {
                         //relations
                         if ($entity->$propName != null) {
-                            if (array_key_exists($this::ENTITY_PROPERTY_ONE, $annotation)) {
+                            if ($annotation[0] == $this::ENTITY_PROPERTY_ONE) {
                                 $tab[$propName] = json_decode($this->serializeEntity($entity->$propName), true);
                             } else {
                                 $tab[$propName] = array();
@@ -256,7 +256,7 @@ class HistorizationManager
                             } else {
                                 if ($entity->$getter() != null) {
                                     //relations
-                                    if (array_key_exists($this::ENTITY_PROPERTY_ONE, $annotation)) {
+                                    if ($annotation[0] == $this::ENTITY_PROPERTY_ONE) {
                                         $tab[$propName] = json_decode($this->serializeEntity($entity->$getter()), true);
                                     } else {
                                         $tab[$propName] = array();
@@ -309,12 +309,12 @@ class HistorizationManager
                         $entity->$propName = $tab[$propName];
                     } else {
                         //relations
-                        if (array_key_exists($this::ENTITY_PROPERTY_ONE, $annotation)) {
-                            $entity->$propName = $this->unserializeEntity($annotation[$this::ENTITY_PROPERTY_ONE], json_encode($tab[$propName]));
+                        if ($annotation[0] == $this::ENTITY_PROPERTY_ONE) {
+                            $entity->$propName = $this->unserializeEntity($annotation[1], json_encode($tab[$propName]));
                         } else {
                             $colection = new ArrayCollection();
                             foreach ($tab[$propName] as $subValue) {
-                                $colection->add($this->unserializeEntity($annotation[$this::ENTITY_PROPERTY_MANY], json_encode($subValue)));
+                                $colection->add($this->unserializeEntity($annotation[1], json_encode($subValue)));
                             }
                             $entity->$propName = $colection;
                         }
@@ -332,12 +332,12 @@ class HistorizationManager
                                 $entity->$setter($tab[$propName]);
                             } else {
                                 //relations
-                                if (array_key_exists($this::ENTITY_PROPERTY_ONE, $annotation)) {
-                                    $entity->$setter($this->unserializeEntity($annotation[$this::ENTITY_PROPERTY_ONE], json_encode($tab[$propName])));
+                                if ($annotation[0] == $this::ENTITY_PROPERTY_ONE) {
+                                    $entity->$setter($this->unserializeEntity($annotation[1], json_encode($tab[$propName])));
                                 } else {
                                     $colection = new ArrayCollection();
                                     foreach ($tab[$propName] as $subValue) {
-                                        $colection->add($this->unserializeEntity($annotation[$this::ENTITY_PROPERTY_MANY], json_encode($subValue)));
+                                        $colection->add($this->unserializeEntity($annotation[1], json_encode($subValue)));
                                     }
                                     $entity->$setter($colection);
                                 }
@@ -493,8 +493,8 @@ class HistorizationManager
                         }
                     } else {
                         //relations
-                        if (array_key_exists($this::ENTITY_PROPERTY_ONE, $annotation)) {
-                            $result = $this->compare($entity->$propName, $entityHistory->$propName, $annotation[$this::ENTITY_PROPERTY_ONE]);
+                        if ($annotation[0] == $this::ENTITY_PROPERTY_ONE) {
+                            $result = $this->compare($entity->$propName, $entityHistory->$propName, $annotation[1]);
                             if (!empty($result)) {
                                 $tabCompare[$propName]['entity'] = $result;
                             }
@@ -511,7 +511,7 @@ class HistorizationManager
                                     if ($subEntity->getId() == $subEntityHistory->getId()) {
                                         $subEntityExist = true;
                                         unset($deleteEntity[array_search($subEntityHistory->getId(), $deleteEntity)]);
-                                        $result = $this->compare($subEntity, $subEntityHistory, $annotation[$this::ENTITY_PROPERTY_MANY]);
+                                        $result = $this->compare($subEntity, $subEntityHistory, $annotation[1]);
                                         if (!empty($result)) {
                                             $tabCompare[$propName]['collection'][$subEntity->getId()] = $result;
                                         }
@@ -545,8 +545,8 @@ class HistorizationManager
                                 }
                             } else {
                                 //relations
-                                if (array_key_exists($this::ENTITY_PROPERTY_ONE, $annotation)) {
-                                    $result = $this->compare($entity->$getter(), $entityHistory->$getter(), $annotation[$this::ENTITY_PROPERTY_ONE]);
+                                if ($annotation[0] == $this::ENTITY_PROPERTY_ONE) {
+                                    $result = $this->compare($entity->$getter(), $entityHistory->$getter(), $annotation[1]);
                                     if (!empty($result)) {
                                         $tabCompare[$propName]['entity'] = $result;
                                     }
@@ -563,7 +563,7 @@ class HistorizationManager
                                             if ($subEntity->getId() == $subEntityHistory->getId()) {
                                                 $subEntityExist = true;
                                                 unset($deleteEntity[array_search($subEntityHistory->getId(), $deleteEntity)]);
-                                                $result = $this->compare($subEntity, $subEntityHistory, $annotation[$this::ENTITY_PROPERTY_MANY]);
+                                                $result = $this->compare($subEntity, $subEntityHistory, $annotation[1]);
                                                 if (!empty($result)) {
                                                     $tabCompare[$propName]['collection'][$subEntity->getId()] = $result;
                                                 }
@@ -602,22 +602,41 @@ class HistorizationManager
      * @return array|null
      */
     protected function getAnnotation($refProperty) {
+        $res = array();
+        $find = false;
         if ($this->reader->getPropertyAnnotation($refProperty, ManyToOne::class)) {
-            return array($this::ENTITY_PROPERTY_ONE => $this->reader->getPropertyAnnotation($refProperty, ManyToOne::class)->targetEntity);
+            $find = true;
+            $res[0] = $this::ENTITY_PROPERTY_ONE;
+            $res[1] = $this->reader->getPropertyAnnotation($refProperty, ManyToOne::class)->targetEntity;
         }
         if ($this->reader->getPropertyAnnotation($refProperty, OneToOne::class)) {
-            return array($this::ENTITY_PROPERTY_ONE => $this->reader->getPropertyAnnotation($refProperty, OneToOne::class)->targetEntity);
+            $find = true;
+            $res[0] = $this::ENTITY_PROPERTY_ONE;
+            $res[1] = $this->reader->getPropertyAnnotation($refProperty, OneToOne::class)->targetEntity;
         }
         if ($this->reader->getPropertyAnnotation($refProperty, Embedded::class)) {
-            return array($this::ENTITY_PROPERTY_ONE => $this->reader->getPropertyAnnotation($refProperty, Embedded::class)->class);
+            $find = true;
+            $res[0] = $this::ENTITY_PROPERTY_ONE;
+            $res[1] = $this->reader->getPropertyAnnotation($refProperty, Embedded::class)->class;
         }
         if ($this->reader->getPropertyAnnotation($refProperty, OneToMany::class)) {
-            return array($this::ENTITY_PROPERTY_MANY => $this->reader->getPropertyAnnotation($refProperty, OneToMany::class)->targetEntity);
+            $find = true;
+            $res[0] = $this::ENTITY_PROPERTY_MANY;
+            $res[1] = $this->reader->getPropertyAnnotation($refProperty, OneToMany::class)->targetEntity;
         }
         if ($this->reader->getPropertyAnnotation($refProperty, ManyToMany::class)) {
-            return array($this::ENTITY_PROPERTY_MANY => $this->reader->getPropertyAnnotation($refProperty, ManyToMany::class)->targetEntity);
+            $find = true;
+            $res[0] = $this::ENTITY_PROPERTY_MANY;
+            $res[1] = $this->reader->getPropertyAnnotation($refProperty, ManyToMany::class)->targetEntity;
         }
-        return null;
+        if (!$find) {
+            return null;
+        }
+        if (strpos($res[1], '\\') === false) {
+            $path = substr($refProperty->class, 0, strrpos($refProperty->class, '\\') + 1);
+            $res[1] = $path . $res[1];
+        }
+        return $res;
     }
 
 }
