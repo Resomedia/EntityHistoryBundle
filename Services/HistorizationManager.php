@@ -502,8 +502,14 @@ class HistorizationManager
                 //if is public access
                 if ($refProperty->isPublic()) {
                     if ($annotation == null) {
-                        if ($entityHistory->$propName != $entity->$propName) {
-                            $tabCompare[$propName] = array($entity->$propName, $entityHistory->$propName);
+                        if ($entity->$propName instanceof \DateTime) {
+                            if ($entityHistory->$propName->format('d/m/Y H:i') != $entity->$propName->format('d/m/Y H:i')) {
+                                $tabCompare[$propName] = array($entity->$propName, $entityHistory->$propName);
+                            }
+                        } else {
+                            if ($entityHistory->$propName != $entity->$propName) {
+                                $tabCompare[$propName] = array($entity->$propName, $entityHistory->$propName);
+                            }
                         }
                     } else {
                         //relations
@@ -571,8 +577,14 @@ class HistorizationManager
                     if ($reflectionClass->hasMethod($getter = 'get' . $methodName)) {
                         try {
                             if ($annotation == null) {
-                                if ($entityHistory->$getter() != $entity->$getter()) {
-                                    $tabCompare[$propName] = array($entity->$getter(), $entityHistory->$getter());
+                                if ($entity->$getter() instanceof \DateTime) {
+                                    if ($entityHistory->$getter()->format('d/m/Y H:i') != $entity->$getter()->format('d/m/Y H:i')) {
+                                        $tabCompare[$propName] = array($entity->$getter(), $entityHistory->$getter());
+                                    }
+                                } else {
+                                    if ($entityHistory->$getter() != $entity->$getter()) {
+                                        $tabCompare[$propName] = array($entity->$getter(), $entityHistory->$getter());
+                                    }
                                 }
                             } else {
                                 //relations
