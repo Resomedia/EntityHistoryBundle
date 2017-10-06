@@ -503,7 +503,9 @@ class HistorizationManager
                 if ($refProperty->isPublic()) {
                     if ($annotation == null) {
                         if ($entity->$propName instanceof \DateTime) {
-                            if ($entityHistory->$propName->format('d/m/Y H:i') != $entity->$propName->format('d/m/Y H:i')) {
+                            $dateHistory = new \DateTime($entityHistory->$propName['date']);
+                            $dateEntity = new \DateTime($entity->$propName['date']);
+                            if ($dateHistory->format('d/m/Y H:i') != $dateEntity->format('d/m/Y H:i')) {
                                 $tabCompare[$propName] = array($entity->$propName, $entityHistory->$propName);
                             }
                         } else {
@@ -578,7 +580,9 @@ class HistorizationManager
                         try {
                             if ($annotation == null) {
                                 if ($entity->$getter() instanceof \DateTime) {
-                                    if ($entityHistory->$getter()->format('d/m/Y H:i') != $entity->$getter()->format('d/m/Y H:i')) {
+                                    $dateHistory = new \DateTime($entityHistory->$getter()['date']);
+                                    $dateEntity = new \DateTime($entity->$getter()['date']);
+                                    if ($dateHistory->format('d/m/Y H:i') != $dateEntity->format('d/m/Y H:i')) {
                                         $tabCompare[$propName] = array($entity->$getter(), $entityHistory->$getter());
                                     }
                                 } else {
