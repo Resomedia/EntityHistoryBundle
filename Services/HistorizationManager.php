@@ -141,6 +141,7 @@ class HistorizationManager
                 if ($em != null) {
                     $em->persist($revision);
                 }
+                $revs[] = $revision;
             }
         }
 
