@@ -504,7 +504,7 @@ class HistorizationManager
                 if ($refProperty->isPublic()) {
                     if ($annotation == null) {
                         if ($entity->$propName instanceof \DateTime) {
-                            if (array_key_exists('date', $entityHistory->$propName)) {
+                            if (is_array($entityHistory->$propName) && array_key_exists('date', $entityHistory->$propName)) {
                                 $dateHistory = new \DateTime($entityHistory->$propName['date']);
                             } else {
                                 $dateHistory = new \DateTime($entityHistory->$propName);
@@ -585,7 +585,7 @@ class HistorizationManager
                         try {
                             if ($annotation == null) {
                                 if ($entity->$getter() instanceof \DateTime) {
-                                    if (array_key_exists('date', $entityHistory->$getter())) {
+                                    if (is_array($entityHistory->$getter()) && array_key_exists('date', $entityHistory->$getter())) {
                                         $dateHistory = new \DateTime($entityHistory->$getter()['date']);
                                     } else {
                                         $dateHistory = new \DateTime($entityHistory->$getter());
