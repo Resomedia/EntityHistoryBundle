@@ -504,9 +504,13 @@ class HistorizationManager
                 if ($refProperty->isPublic()) {
                     if ($annotation == null) {
                         if ($entity->$propName instanceof \DateTime) {
-                            $dateHistory = new \DateTime($entityHistory->$propName['date']);
+                            if (array_key_exists('date', $entityHistory->$propName)) {
+                                $dateHistory = new \DateTime($entityHistory->$propName['date']);
+                            } else {
+                                $dateHistory = new \DateTime($entityHistory->$propName);
+                            }
                             if ($dateHistory->format('d/m/Y H:i') != $entity->$propName->format('d/m/Y H:i')) {
-                                $tabCompare[$propName] = array($entity->$propName, $entityHistory->$propName);
+                                $tabCompare[$propName] = array($entity->$propName->format('d/m/Y H:i'), $dateHistory->format('d/m/Y H:i'));
                             }
                         } else {
                             if ($entityHistory->$propName != $entity->$propName) {
@@ -581,9 +585,13 @@ class HistorizationManager
                         try {
                             if ($annotation == null) {
                                 if ($entity->$getter() instanceof \DateTime) {
-                                    $dateHistory = new \DateTime($entityHistory->$getter()['date']);
+                                    if (array_key_exists('date', $entityHistory->$getter())) {
+                                        $dateHistory = new \DateTime($entityHistory->$getter()['date']);
+                                    } else {
+                                        $dateHistory = new \DateTime($entityHistory->$getter());
+                                    }
                                     if ($dateHistory->format('d/m/Y H:i') != $entity->$getter()->format('d/m/Y H:i')) {
-                                        $tabCompare[$propName] = array($entity->$getter(), $entityHistory->$getter());
+                                        $tabCompare[$propName] = array($entity->$getter()->format('d/m/Y H:i'), $dateHistory->format('d/m/Y H:i'));
                                     }
                                 } else {
                                     if ($entityHistory->$getter() != $entity->$getter()) {
