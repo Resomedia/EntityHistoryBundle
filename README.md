@@ -10,7 +10,7 @@ ResomediaDoctrineEncryptBundle should be installed usin Composer:
 
     {
         "require": {
-            "resomedia/entity-history-bundle": "1.*"
+            "resomedia/entity-history-bundle": "2.*"
         }
     }
 
@@ -20,15 +20,14 @@ $ php composer.phar update resomedia/entity-history-bundle
 
 ###Step 2: Enable the bundle
 
-Enable the bundle in the Symfony2 kernel by adding it in your /app/AppKernel.php file:
+Enable the bundle in the Symfony4 bundle.php by adding it :
 
-    public function registerBundles()
-    {
-        $bundles = array(
-            // ...
-            new Resomedia\DoctrineEncryptBundle\ResomediaEntityHistoryBundle(),
-        );
-    }
+    // config/bundles.php
+    return [
+        // ...
+        Resomedia\DoctrineEncryptBundle\ResomediaEntityHistoryBundle::class => ['all' => true],
+        // ...
+    ];
 
 ###Step 3: Configuration
 
@@ -110,9 +109,9 @@ Without this parameters, the version use is the last before the actual version.
 ####Create versions automatically
 
 Add the suscriber in your services.yml for create automatically a new version when an entity with the @History annotation is modified.
+Or use autowiring
 
-    resomedia_entity_history.subscriber:
-        class: Resomedia\EntityHistoryBundle\Subscribers\HistorizationSubscriber
+    Resomedia\EntityHistoryBundle\Subscribers\HistorizationSubscriber:
         arguments: ["@resomedia_entity_history.historization_manager"]
         tags:
             -  { name: doctrine.event_subscriber }

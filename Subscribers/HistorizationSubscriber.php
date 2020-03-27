@@ -7,6 +7,10 @@ use Doctrine\ORM\Event\PreFlushEventArgs;
 use Doctrine\ORM\Events;
 use Resomedia\EntityHistoryBundle\Services\HistorizationManager;
 
+/**
+ * Class HistorizationSubscriber
+ * @package Resomedia\EntityHistoryBundle\Subscribers
+ */
 class HistorizationSubscriber implements EventSubscriber
 {
     /**

@@ -1,0 +1,10 @@
+services:
+    annotations.reader:
+        class: Doctrine\Common\Annotations\AnnotationReader
+    Doctrine\Common\Annotations\Reader:
+        alias: annotations.reader
+    #resomedia_entity_history.subscriber:
+        #class: Resomedia\EntityHistoryBundle\Subscribers\HistorizationSubscriber
+        #arguments: ["@resomedia_entity_history.historization_manager"]
+        #tags:
+            #-  { name: doctrine.event_subscriber }
