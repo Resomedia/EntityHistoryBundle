@@ -2,7 +2,7 @@
 
 namespace Resomedia\EntityHistoryBundle\Services;
 
-use Doctrine\Common\Annotations\Reader;
+use Doctrine\Common\Annotations\AnnotationReader;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Util\ClassUtils;
 use Doctrine\ORM\EntityManager;
@@ -15,6 +15,7 @@ use Resomedia\EntityHistoryBundle\Model\History;
 use Resomedia\EntityHistoryBundle\Annotation\History as HistoryAnnotation;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorage;
 use Symfony\Component\Security\Core\Authorization\AuthorizationChecker;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 
 /**
  * Class HistorizationManager
@@ -46,39 +47,38 @@ class HistorizationManager
     protected $current_user;
 
     /**
-     * @var Reader
+     * @var AnnotationReader
      */
     protected $reader;
 
     /**
      * HistorizationManager constructor.
-     * @param $userProperty
-     * @param $classAudit
+     * @param $parameterBag
      * @param $authorizationChecker
      * @param $tokenStorage
-     * @param $EntityConfigs
-     * @param Reader $annReader
+     * @param AnnotationReader $annReader
      */
-    public function __construct($userProperty, $classAudit, AuthorizationChecker $authorizationChecker, TokenStorage $tokenStorage, $EntityConfigs, Reader $annReader)
+    public function __construct(ParameterBagInterface $parameterBag, AuthorizationChecker $authorizationChecker, TokenStorage $tokenStorage, AnnotationReader $annReader)
     {
         $this->reader = $annReader;
-        $this->class_audit = $classAudit;
-        $this->user_property = $userProperty;
+        $this->class_audit = $parameterBag->get('resomedia_entity_history.class_history');
+        $this->user_property = $parameterBag->get('resomedia_entity_history.user_property');
         if ($tokenStorage->getToken() != null && $authorizationChecker->isGranted('IS_AUTHENTICATED_REMEMBERED')) {
             $this->current_user = $tokenStorage->getToken()->getUser();
         } else {
             $this->current_user = History::ANONYMOUS;
         }
 
-        $this->configs = $EntityConfigs;
+        $this->configs = $parameterBag->get('resomedia_entity_history.entities');
     }
 
     /**
      * alias of historizationEntities
-     * @param mixed $entity
-     * @param EntityManager $em
-     * @param integer $state
+     * @param $entity
+     * @param EntityManager|null $em
+     * @param null $state
      * @return array
+     * @throws \Exception
      */
     public function historizationEntity($entity, EntityManager $em = null, $state = null)
     {
@@ -88,10 +88,11 @@ class HistorizationManager
     /**
      * register the actual version of entities
      * or origin entities if have a propertyOrigin specify
-     * @param array $entitiesO
-     * @param EntityManager $em
-     * @param integer $state
+     * @param $entitiesO
+     * @param EntityManager|null $em
+     * @param null $state
      * @return array
+     * @throws \Exception
      */
     public function historizationEntities($entitiesO, EntityManager $em = null, $state = null) {
         $classAudit = $this->class_audit;
@@ -178,9 +179,10 @@ class HistorizationManager
      * )
      * @param $repository
      * @param $entity
-     * @param $revision
-     * @param $id the id of revision you want to use for compare
+     * @param null $revision
+     * @param null $id
      * @return array|null
+     * @throws \ErrorException
      */
     public function compareEntityVersion($repository, $entity, $revision = null, $id = null) {
         if (!$revision) {
@@ -375,8 +377,9 @@ class HistorizationManager
     /**
      * Recursive function to get an associative array of class properties
      * including inherited ones from extended classes
-     * @param string|object $className
-     * @return array
+     * @param $className
+     * @return array|\ReflectionProperty[]
+     * @throws \ReflectionException
      */
     protected function getClassProperties($className){
         $reflectionClass = new \ReflectionClass($className);
@@ -485,6 +488,7 @@ class HistorizationManager
      * @param $class
      * @return array
      * @throws \ErrorException
+     * @throws \ReflectionException
      */
     protected function compare($entity, $entityHistory, $class) {
         $tabCompare = array();
@@ -711,5 +715,4 @@ class HistorizationManager
         }
         return $res;
     }
-
 }
