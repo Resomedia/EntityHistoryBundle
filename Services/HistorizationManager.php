@@ -15,7 +15,6 @@ use Resomedia\EntityHistoryBundle\Model\History;
 use Resomedia\EntityHistoryBundle\Annotation\History as HistoryAnnotation;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorage;
 use Symfony\Component\Security\Core\Authorization\AuthorizationChecker;
-use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 
 /**
  * Class HistorizationManager
@@ -53,23 +52,25 @@ class HistorizationManager
 
     /**
      * HistorizationManager constructor.
-     * @param $parameterBag
-     * @param $authorizationChecker
-     * @param $tokenStorage
+     * @param $user_property
+     * @param $class
+     * @param $configs
+     * @param AuthorizationChecker $authorizationChecker
+     * @param TokenStorage $tokenStorage
      * @param AnnotationReader $annReader
      */
-    public function __construct(ParameterBagInterface $parameterBag, AuthorizationChecker $authorizationChecker, TokenStorage $tokenStorage, AnnotationReader $annReader)
+    public function __construct($user_property, $class, $configs, AuthorizationChecker $authorizationChecker, TokenStorage $tokenStorage, AnnotationReader $annReader)
     {
         $this->reader = $annReader;
-        $this->class_audit = $parameterBag->get('resomedia_entity_history.class_history');
-        $this->user_property = $parameterBag->get('resomedia_entity_history.user_property');
+        $this->class_audit = $class;
+        $this->user_property = $user_property;
         if ($tokenStorage->getToken() != null && $authorizationChecker->isGranted('IS_AUTHENTICATED_REMEMBERED')) {
             $this->current_user = $tokenStorage->getToken()->getUser();
         } else {
             $this->current_user = History::ANONYMOUS;
         }
 
-        $this->configs = $parameterBag->get('resomedia_entity_history.entities');
+        $this->configs = $configs;
     }
 
     /**
