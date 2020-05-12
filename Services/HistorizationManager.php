@@ -60,17 +60,16 @@ class HistorizationManager
      * @param $user_property
      * @param $class
      * @param $configs
-     * @param AuthorizationChecker $authorizationChecker
-     * @param TokenStorage $tokenStorage
+     * @param Security $security
      * @param AnnotationReader $annReader
      */
-    public function __construct($user_property, $class, $configs, AuthorizationChecker $authorizationChecker, TokenStorage $tokenStorage, AnnotationReader $annReader, EntityManagerInterface $em)
+    public function __construct($user_property, $class, $configs, Security $security, AnnotationReader $annReader, EntityManagerInterface $em)
     {
         $this->reader = $annReader;
         $this->class_audit = $class;
         $this->user_property = $user_property;
-        if ($tokenStorage->getToken() != null && $authorizationChecker->isGranted('IS_AUTHENTICATED_REMEMBERED')) {
-            $this->current_user = $tokenStorage->getToken()->getUser();
+        if ($security->getUser() != null && $security->isGranted('IS_AUTHENTICATED_REMEMBERED')) {
+            $this->current_user = $security->getUser();
         } else {
             $this->current_user = History::ANONYMOUS;
         }
