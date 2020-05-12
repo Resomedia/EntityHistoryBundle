@@ -13,8 +13,7 @@ use Doctrine\ORM\Mapping\OneToMany;
 use Doctrine\ORM\Mapping\OneToOne;
 use Resomedia\EntityHistoryBundle\Model\History;
 use Resomedia\EntityHistoryBundle\Annotation\History as HistoryAnnotation;
-use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorage;
-use Symfony\Component\Security\Core\Authorization\AuthorizationChecker;
+use Symfony\Component\Security\Core\Security;
 
 /**
  * Class HistorizationManager
