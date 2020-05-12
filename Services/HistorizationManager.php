@@ -5,7 +5,7 @@ namespace Resomedia\EntityHistoryBundle\Services;
 use Doctrine\Common\Annotations\AnnotationReader;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Util\ClassUtils;
-use Doctrine\ORM\EntityManager;
+use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Mapping\Embedded;
 use Doctrine\ORM\Mapping\ManyToMany;
 use Doctrine\ORM\Mapping\ManyToOne;
@@ -51,6 +51,11 @@ class HistorizationManager
     protected $reader;
 
     /**
+     * @var EntityManagerInterface
+     */
+    protected $em;
+
+    /**
      * HistorizationManager constructor.
      * @param $user_property
      * @param $class
@@ -59,7 +64,7 @@ class HistorizationManager
      * @param TokenStorage $tokenStorage
      * @param AnnotationReader $annReader
      */
-    public function __construct($user_property, $class, $configs, AuthorizationChecker $authorizationChecker, TokenStorage $tokenStorage, AnnotationReader $annReader)
+    public function __construct($user_property, $class, $configs, AuthorizationChecker $authorizationChecker, TokenStorage $tokenStorage, AnnotationReader $annReader, EntityManagerInterface $em)
     {
         $this->reader = $annReader;
         $this->class_audit = $class;
@@ -69,6 +74,7 @@ class HistorizationManager
         } else {
             $this->current_user = History::ANONYMOUS;
         }
+        $this->em = $em;
 
         $this->configs = $configs;
     }
@@ -76,26 +82,26 @@ class HistorizationManager
     /**
      * alias of historizationEntities
      * @param $entity
-     * @param EntityManager|null $em
+     * @param bool $persist
      * @param null $state
      * @return array
      * @throws \Exception
      */
-    public function historizationEntity($entity, EntityManager $em = null, $state = null)
+    public function historizationEntity($entity, $persist = false, $state = null)
     {
-        return $this->historizationEntities(array($entity), $em, $state);
+        return $this->historizationEntities(array($entity), $persist, $state);
     }
 
     /**
      * register the actual version of entities
      * or origin entities if have a propertyOrigin specify
      * @param $entitiesO
-     * @param EntityManager|null $em
+     * @param bool $persist
      * @param null $state
      * @return array
      * @throws \Exception
      */
-    public function historizationEntities($entitiesO, EntityManager $em = null, $state = null) {
+    public function historizationEntities($entitiesO, $persist = false, $state = null) {
         $classAudit = $this->class_audit;
         if ($this->current_user != History::ANONYMOUS) {
             $tabName = explode('_', $this->user_property);
@@ -140,8 +146,8 @@ class HistorizationManager
                 $revision->setDate(new \DateTime());
                 $revision->addProcess($cycleEntity[0], $entity);
                 //if entityManager is specify, persist automaticaly
-                if ($em != null) {
-                    $em->persist($revision);
+                if ($persist == true) {
+                    $this->em->persist($revision);
                 }
                 $revs[] = $revision;
             }

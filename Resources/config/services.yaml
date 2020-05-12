@@ -3,10 +3,9 @@ services:
         class: Doctrine\Common\Annotations\AnnotationReader
     Doctrine\Common\Annotations\Reader:
         alias: history.annotations.reader
-    resomedia_entity_history.historization_manager:
-        class: Resomedia\EntityHistoryBundle\Services\HistorizationManager
+    Resomedia\EntityHistoryBundle\Services\HistorizationManager:
+        alias: resomedia_entity_history.historization_manager
         arguments: ["%resomedia_entity_history.user_property%", "%resomedia_entity_history.class_history%", "%resomedia_entity_history.entities%", "@security.authorization_checker", "@security.token_storage", "@annotation_reader"]
-        public: true
     #resomedia_entity_history.subscriber:
         #class: Resomedia\EntityHistoryBundle\Subscribers\HistorizationSubscriber
         #arguments: ["@resomedia_entity_history.historization_manager"]
