@@ -25,7 +25,7 @@ Enable the bundle in the Symfony4 bundle.php by adding it :
     // config/bundles.php
     return [
         // ...
-        Resomedia\DoctrineEncryptBundle\ResomediaEntityHistoryBundle::class => ['all' => true],
+        Resomedia\EntityHistoryBundle\ResomediaEntityHistoryBundle::class => ['all' => true],
         // ...
     ];
 
