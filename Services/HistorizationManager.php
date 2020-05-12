@@ -60,11 +60,10 @@ class HistorizationManager
      * @param $class
      * @param $configs
      * @param Security $security
-     * @param AnnotationReader $annReader
      */
-    public function __construct($user_property, $class, $configs, Security $security, AnnotationReader $annReader, EntityManagerInterface $em)
+    public function __construct($user_property, $class, $configs, Security $security, EntityManagerInterface $em)
     {
-        $this->reader = $annReader;
+        $this->reader = new AnnotationReader;
         $this->class_audit = $class;
         $this->user_property = $user_property;
         if ($security->getUser() != null && $security->isGranted('IS_AUTHENTICATED_REMEMBERED')) {

@@ -7,7 +7,7 @@ services:
     Doctrine\Common\Annotations\Reader:
         alias: history.annotations.reader
     Resomedia\EntityHistoryBundle\Services\HistorizationManager:
-        arguments: ['%resomedia_entity_history.user_property%', '%resomedia_entity_history.class_history%', '%resomedia_entity_history.entities%', '@security.helper', '@annotation_reader', '@doctrine.orm.entity_manager']
+        arguments: ['%resomedia_entity_history.user_property%', '%resomedia_entity_history.class_history%', '%resomedia_entity_history.entities%', '@security.helper', '@doctrine.orm.entity_manager']
     resomedia_entity_history.historization_manager:
         class: Resomedia\EntityHistoryBundle\Services\HistorizationManager
     #resomedia_entity_history.subscriber:
