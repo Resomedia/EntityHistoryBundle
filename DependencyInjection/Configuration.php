@@ -17,9 +17,8 @@ class Configuration implements ConfigurationInterface
      */
     public function getConfigTreeBuilder()
     {
-        $treeBuilder = new TreeBuilder();
-        $rootNode = $treeBuilder->root('resomedia_entity_history');
-
+        $treeBuilder = new TreeBuilder('resomedia_entity_history');
+        $rootNode = $treeBuilder->getRootNode();
         $rootNode->children()
             ->scalarNode('user_property')
                 ->defaultValue('username')
