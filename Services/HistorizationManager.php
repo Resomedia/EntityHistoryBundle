@@ -340,7 +340,11 @@ class HistorizationManager
                     if ($reflectionClass->hasMethod($setter) || $reflectionClass->hasMethod($adder) || $reflectionClass->hasMethod($adderss)) {
                         try {
                             if ($annotation == null) {
-                                $entity->$setter($tab[$propName]);
+                                if (is_array($tab[$propName]) && array_key_exists('timezone', $tab[$propName]) && array_key_exists('timezone_type', $tab[$propName]) && array_key_exists('date', $tab[$propName])) {
+                                    $entity->$setter(new \DateTime($tab[$propName]['date'], new \DateTimeZone($tab[$propName]['timezone'])));
+                                } else {
+                                    $entity->$setter($tab[$propName]);
+                                }
                             } else {
                                 //relations
                                 if ($annotation[0] == $this::ENTITY_PROPERTY_ONE) {
@@ -596,7 +600,7 @@ class HistorizationManager
                                     if (is_array($entityHistory->$getter()) && array_key_exists('date', $entityHistory->$getter())) {
                                         $dateHistory = new \DateTime($entityHistory->$getter()['date']);
                                     } else {
-                                        $dateHistory = new \DateTime($entityHistory->$getter());
+                                        $dateHistory = $entityHistory->$getter();
                                     }
                                     if ($dateHistory->format('d/m/Y H:i') != $entity->$getter()->format('d/m/Y H:i')) {
                                         $tabCompare[$propName] = array($entity->$getter()->format('d/m/Y H:i'), $dateHistory->format('d/m/Y H:i'));
